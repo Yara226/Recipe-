@@ -3,23 +3,14 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store'; // عدلي المسار لو لزم الأمر
 import Recipes from '../Recipes/Recipes';
 
 export default function RecipeDashboard() {
   const [user, setUser] = useState({ firstName: "Jega" });
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
-
-  // جلب العناصر من الـ Redux
-  const { items } = useSelector((state: RootState) => state.items);
-
-  // عشان نتأكد من شكل البيانات واسم الحقول في الكونسول
-  useEffect(() => {
-    console.log("Redux Items:", items);
-  }, [items]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("currentUser");
@@ -31,10 +22,39 @@ export default function RecipeDashboard() {
   // دالة مساعدة لجلب اسم الوصفة بغض النظر عن اسم الخاصية (name أو title)
   const getItemName = (item: any) => item.name || item.title || item.strMeal || '';
 
-  // تصفية العناصر أثناء الكتابة
-  const filteredItems = searchTerm.trim() === '' ? [] : items.filter((item: any) => 
-    getItemName(item).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    const query = searchTerm.trim();
+    if (!query) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) throw new Error('Recipe suggestions failed');
+
+        const data = await response.json();
+        setSearchSuggestions(data.meals ?? []);
+      } catch (error) {
+        if ((error as DOMException).name !== 'AbortError') {
+          console.error('Recipe suggestions failed:', error);
+          setSearchSuggestions([]);
+        }
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [searchTerm]);
+
+  const filteredItems = searchTerm.trim() === '' ? [] : searchSuggestions;
 
   // دالة عند الضغط على زر Search
   const handleSearchClick = async () => {
@@ -126,12 +146,12 @@ export default function RecipeDashboard() {
                     }}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-none"
                   >
-                    {item.image && (
-                      <img src={item.image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
+                    {(item.strMealThumb || item.image) && (
+                      <img src={item.strMealThumb || item.image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
                     )}
                     <div>
                       <p className="text-sm font-medium text-gray-800">{name}</p>
-                      <p className="text-xs text-gray-400">{item.category || 'Recipe'}</p>
+                      <p className="text-xs text-gray-400">{item.strCategory || item.category || 'Recipe'}</p>
                     </div>
                   </div>
                 );
