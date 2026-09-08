@@ -4,7 +4,7 @@ A recipe discovery app built with Next.js, React, TypeScript, Redux, and Tailwin
 
 ## Live Demo
 
-[Open Recipe App on Vercel](https://recipe-yora4.vercel.app/)
+[Open Recipe App on Vercel](https://recipe-umber-omega.vercel.app/)
 
 ## Features
 
