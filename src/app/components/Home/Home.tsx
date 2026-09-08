@@ -10,6 +10,7 @@ import Recipes from '../Recipes/Recipes';
 export default function RecipeDashboard() {
   const [user, setUser] = useState({ firstName: "Jega" });
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
 
   // جلب العناصر من الـ Redux
@@ -36,19 +37,30 @@ export default function RecipeDashboard() {
   );
 
   // دالة عند الضغط على زر Search
-  const handleSearchClick = () => {
-    if (!searchTerm.trim()) return;
-    
-    const matchedItem = items.find((item: any) => 
-      getItemName(item).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const handleSearchClick = async () => {
+    const query = searchTerm.trim();
+    if (!query || isSearching) return;
 
-    if (matchedItem) {
-      const mealId = (matchedItem as any).idMeal ?? (matchedItem as any).mealId ?? (matchedItem as any).id;
-      console.log("Navigating to mealId:", mealId);
-      router.push(`/items/meal?mealId=${encodeURIComponent(String(mealId))}`);
-    } else {
-      alert("عذراً، هذه الوصفة غير موجودة");
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`,
+      );
+      if (!response.ok) throw new Error('Recipe search failed');
+
+      const data = await response.json();
+      const matchedMeal = data.meals?.[0];
+
+      if (matchedMeal?.idMeal) {
+        router.push(`/items/meal?mealId=${encodeURIComponent(matchedMeal.idMeal)}`);
+      } else {
+        alert("عذراً، هذه الوصفة غير موجودة");
+      }
+    } catch (error) {
+      console.error('Recipe search failed:', error);
+      alert("تعذر البحث عن الوصفة حالياً");
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -96,7 +108,7 @@ export default function RecipeDashboard() {
               onClick={handleSearchClick}
               className="bg-[#129575] hover:bg-[#0f7a5f] transition-colors px-5 py-3.5 rounded-2xl flex items-center justify-center text-white shadow-sm text-sm font-medium cursor-pointer"
             >
-              Search
+              {isSearching ? 'Searching...' : 'Search'}
             </button>
           </div>
 
