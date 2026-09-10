@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiClock, FiGlobe, FiList } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 interface RecipeDetailsProps {
   meal: any;
@@ -14,62 +15,42 @@ export default function RecipeDetails({ meal }: RecipeDetailsProps) {
 
   const itemId = meal.idMeal;
 
-  // جلب إيميل المستخدم الحالي ديناميكياً عند تحميل الصفحة أو تغيير الحساب
+  // جلب إيميل المستخدم الحالي من جلسة الخادم
   useEffect(() => {
-    try {
-      // 1. محاولة الجلب من Redux Persist لو مخزن بالطريقة القياسية
-      const persistRoot = localStorage.getItem('persist:root');
-      if (persistRoot) {
-        const parsedRoot = JSON.parse(persistRoot);
-        // أحياناً الـ currentUser بيكون مخزن جوا الـ persist كـ string JSON
-        if (parsedRoot.currentUser) {
-          const userObj = JSON.parse(parsedRoot.currentUser);
-          if (userObj?.email) {
-            setUserEmail(userObj.email);
-            return;
-          }
-        }
-      }
-
-      // 2. كبديل: البحث المباشر لو كنت مخزن الـ currentUser لوحده في الـ localStorage
-      const directUser = localStorage.getItem('currentUser');
-      if (directUser) {
-        const userObj = JSON.parse(directUser);
-        if (userObj?.email) {
-          setUserEmail(userObj.email);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching current user email:', error);
-    }
+    fetch('/api/auth/me')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setUserEmail(data?.user?.email ?? null))
+      .catch((error) => console.error('Error fetching current user email:', error));
   }, []);
 
   // التحقق هل الوصفة محفوظة لهذا المستخدم بالذات أم لا
   useEffect(() => {
     if (!userEmail) return;
-    const savedItemsKey = `saved_items_${userEmail}`;
-    const storedItems: string[] = JSON.parse(localStorage.getItem(savedItemsKey) || '[]');
-    setIsSaved(storedItems.includes(itemId));
+    fetch('/api/saved')
+      .then((response) => response.json())
+      .then(({ mealIds }: { mealIds: string[] }) => setIsSaved(mealIds.includes(itemId)))
+      .catch((error) => console.error('Error checking saved recipe:', error));
   }, [itemId, userEmail]);
 
-  const handleToggleSave = () => {
+  const handleToggleSave = async () => {
     if (!userEmail) {
-      alert('يرجى تسجيل الدخول أولاً لحفظ الوصفات');
+      toast.error('يرجى تسجيل الدخول أولاً لحفظ الوصفات');
       return;
     }
 
-    const savedItemsKey = `saved_items_${userEmail}`;
-    const storedItems: string[] = JSON.parse(localStorage.getItem(savedItemsKey) || '[]');
+    const response = await fetch('/api/saved', {
+      method: isSaved ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealId: itemId }),
+    });
 
-    let updatedItems: string[];
-    if (isSaved) {
-      updatedItems = storedItems.filter((id) => id !== itemId);
-    } else {
-      updatedItems = [...storedItems, itemId];
+    if (!response.ok) {
+      toast.error('تعذر تحديث الوصفة المحفوظة');
+      return;
     }
 
-    localStorage.setItem(savedItemsKey, JSON.stringify(updatedItems));
     setIsSaved(!isSaved);
+    toast.success(isSaved ? 'تمت إزالة الوصفة من المحفوظات' : 'تم حفظ الوصفة بنجاح');
   };
 
   const ingredients = [];

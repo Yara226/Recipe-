@@ -4,7 +4,10 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import type{recipe} from '../../../utls/types/recipe'
 import { useState } from "react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 export default function NewRecipePage() {
+  const router = useRouter();
     const [ingredients, setIngredients] = useState([""]);
 const [steps, setSteps] = useState([""]);
 const addIngredientField = () => {
@@ -22,26 +25,31 @@ const addStepField = () => {
     } = useForm<recipe>({
      
     });
- const onSubmit: SubmitHandler<recipe> = (data) => {
-    console.log(data)
-   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-   if (!currentUser?.email) {
-     alert("Please sign in before saving a recipe.");
-     return;
-   }
+ const onSubmit: SubmitHandler<recipe> = async (data) => {
    const newRecipe = {
   id: data.name + data.time,
-  email: currentUser.email,
   name: data.name,
   image: data.image,
   time: data.time,
   ingredients: data.ingredients.filter(i => i.trim() !== ""),
   steps: data.steps.filter(s => s.trim() !== "")
 };
-  alert("Recipe saved successfully!");
+  const response = await fetch('/api/recipes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newRecipe),
+  });
+
+  if (!response.ok) {
+    toast.error(response.status === 401 ? "Please sign in before saving a recipe." : "Unable to save recipe.");
+    return;
+  }
+
+  toast.success("Recipe saved successfully!");
     reset();
-    const existingRecipes = JSON.parse(localStorage.getItem("myRecipes") || "[]");
-    localStorage.setItem("myRecipes", JSON.stringify([...existingRecipes, newRecipe]));
+    setIngredients([""]);
+    setSteps([""]);
+    router.push(`/added?id=${encodeURIComponent(newRecipe.id)}`);
   
  }
 

@@ -13,30 +13,12 @@ export default function SavedRecipes() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // 1. جلب إيميل المستخدم الحالي
+  // 1. جلب المستخدم الحالي من جلسة الخادم
   useEffect(() => {
-    try {
-      const persistRoot = localStorage.getItem('persist:root');
-      if (persistRoot) {
-        const parsedRoot = JSON.parse(persistRoot);
-        if (parsedRoot.currentUser) {
-          const userObj = JSON.parse(parsedRoot.currentUser);
-          if (userObj?.email) {
-            setUserEmail(userObj.email);
-            return;
-          }
-        }
-      }
-      const directUser = localStorage.getItem('currentUser');
-      if (directUser) {
-        const userObj = JSON.parse(directUser);
-        if (userObj?.email) {
-          setUserEmail(userObj.email);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user email:', error);
-    }
+    fetch('/api/auth/me')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setUserEmail(data?.user?.email ?? null))
+      .catch((error) => console.error('Error fetching user email:', error));
   }, []);
 
   // 2. جلب تفاصيل الوصفات المحفوظة من الـ API بناءً على الـ IDs المخزنة في الـ localStorage
@@ -49,8 +31,8 @@ export default function SavedRecipes() {
     const fetchSavedMeals = async () => {
       setLoading(true);
       try {
-        const savedItemsKey = `saved_items_${userEmail}`;
-        const storedIds: string[] = JSON.parse(localStorage.getItem(savedItemsKey) || '[]');
+        const savedResponse = await fetch('/api/saved');
+        const { mealIds: storedIds }: { mealIds: string[] } = await savedResponse.json();
 
         if (storedIds.length === 0) {
           setSavedMeals([]);
@@ -78,15 +60,14 @@ export default function SavedRecipes() {
   }, [userEmail]);
 
   // 3. دالة إزالة عنصر من المفضلة وحفظ التغيير
-  const handleRemove = (idMeal: string) => {
+  const handleRemove = async (idMeal: string) => {
     if (!userEmail) return;
 
-    const savedItemsKey = `saved_items_${userEmail}`;
-    const storedIds: string[] = JSON.parse(localStorage.getItem(savedItemsKey) || '[]');
-    
-    // تصفية الـ IDs وإزالة العنصر المحذوف
-    const updatedIds = storedIds.filter((id) => id !== idMeal);
-    localStorage.setItem(savedItemsKey, JSON.stringify(updatedIds));
+    await fetch('/api/saved', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealId: idMeal }),
+    });
 
     // تحديث الـ State فوراً لإخفاء الكارد من الصفحة
     setSavedMeals((prev) => prev.filter((meal) => meal.idMeal !== idMeal));

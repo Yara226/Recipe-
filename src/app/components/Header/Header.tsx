@@ -1,7 +1,6 @@
 
 import Link from 'next/link';
 import {FaRegBookmark, FaHome, FaBell, FaUser, FaPlus } from 'react-icons/fa';
-
 export default function Header() {
   return (
     <>

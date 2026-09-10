@@ -9,7 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.env*.local
 # testing
 /coverage
 
@@ -42,3 +42,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+/data.db
+/data.db-shm
+/data.db-wal

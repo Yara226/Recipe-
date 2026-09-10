@@ -1,6 +1,5 @@
 
 'use client';
-
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
@@ -9,6 +8,7 @@ import { useForm, SubmitHandler } from "react-hook-form"
 import type {Inputsup} from '../../../utls/types/sign'
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema } from "../../../validations/validate";
+import toast from "react-hot-toast";
 export default function SignUp() {
 
     const router = useRouter();
@@ -22,29 +22,26 @@ const {
   } = useForm<Inputsup>({
         resolver: zodResolver(signupSchema),}
   )
-  const onSubmit: SubmitHandler<Inputsup> = (data) => {
-    if (typeof window === 'undefined') return;
-    let users = JSON.parse(localStorage.getItem('users') || '[]');
-    let existingUser = users.find((u: any) => u.email === data.email);
-  if (existingUser) {
-    alert("الإيميل ده مسجل قبل كده! جرب إيميل تاني.");
-    return;
-  }
-  let newUser = {
-    firstName: data.name, // تأكدي إن الحقول دي مطابقة لأسماء الـ Schema في Zod
-    email: data.email,
-    password: data.password,
-    id: Math.random().toString(36).substring(2, 11)
-  };
-users.push(newUser);
-  localStorage.setItem('users', JSON.stringify(users));
+    const onSubmit: SubmitHandler<Inputsup> = async (data) => {
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
 
-  alert("تم إنشاء الحساب بنجاح!");
-  
-  // 6. تفريغ الفورمة أو التوجيه لصفحة الـ Login
-  reset();
-  router.replace('/login');
-    }
+        if (!response.ok) {
+            toast.error(response.status === 409 ? "هذا البريد الإلكتروني مسجل بالفعل" : "تعذر إنشاء الحساب");
+            return;
+        }
+
+        toast.success("تم إنشاء الحساب بنجاح");
+        reset();
+        router.replace('/login');
+    };
+
+    const handleSocialLogin = (provider: 'google' | 'facebook') => {
+        window.location.assign(`/api/auth/${provider}`);
+    };
     return (
         <div 
             className="min-h-screen bg-cover bg-center text-white flex items-center justify-center p-4 font-sans relative"
@@ -131,10 +128,10 @@ users.push(newUser);
 
                 {/* أزرار السوشيال ميديا */}
                 <div className="flex justify-center gap-4 mb-6">
-                    <button className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
+                    <button type="button" onClick={() => handleSocialLogin('google')} aria-label="Continue with Google" className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
                         <FcGoogle className="text-2xl" />
                     </button>
-                    <button className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
+                    <button type="button" onClick={() => handleSocialLogin('facebook')} aria-label="Continue with Facebook" className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
                         <FaFacebookF className="text-2xl text-blue-500" />
                     </button>
                 </div>

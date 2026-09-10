@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { FiArrowLeft } from 'react-icons/fi';
 import { HiDocumentText } from 'react-icons/hi2';
 import Link from 'next/link';
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState('Read');
-
   const notifications = {
     today: [
       {

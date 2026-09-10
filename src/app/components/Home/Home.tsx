@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import Recipes from '../Recipes/Recipes';
-
+import Searching from './Searching';
+import toast from 'react-hot-toast';
 export default function RecipeDashboard() {
   const [user, setUser] = useState({ firstName: "Jega" });
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,10 +14,10 @@ export default function RecipeDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    fetch('/api/auth/me')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => data?.user && setUser(data.user))
+      .catch(() => undefined);
   }, []);
 
   // دالة مساعدة لجلب اسم الوصفة بغض النظر عن اسم الخاصية (name أو title)
@@ -74,11 +75,11 @@ export default function RecipeDashboard() {
       if (matchedMeal?.idMeal) {
         router.push(`/items/meal?mealId=${encodeURIComponent(matchedMeal.idMeal)}`);
       } else {
-        alert("عذراً، هذه الوصفة غير موجودة");
+        toast.error("عذراً، هذه الوصفة غير موجودة");
       }
     } catch (error) {
       console.error('Recipe search failed:', error);
-      alert("تعذر البحث عن الوصفة حالياً");
+      toast.error("تعذر البحث عن الوصفة حالياً");
     } finally {
       setIsSearching(false);
     }
@@ -91,10 +92,10 @@ export default function RecipeDashboard() {
         <div className="flex justify-between items-center p-4 mb-2">
           <div>
             <h1 className="template text-2xl font-bold text-gray-900">
-              Hello {user.firstName || "Jega"}
+              Hello {user.firstName || "......"}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
-              What are you cooking today?
+              What do you want to cook today?
             </p>
           </div>
 
@@ -122,7 +123,6 @@ export default function RecipeDashboard() {
                 className="bg-transparent outline-none w-full text-sm text-gray-700 placeholder-gray-400"
               />
             </div>
-
             <button 
               type="button"
               onClick={handleSearchClick}
@@ -139,21 +139,9 @@ export default function RecipeDashboard() {
                 const mealId = item.idMeal ?? item.mealId ?? item.id;
                 const name = getItemName(item);
                 return (
-                  <div 
+                  <Searching
                     key={mealId ?? index}
-                    onClick={() => {
-                      router.replace(`/items/meal?mealId=${encodeURIComponent(String(mealId ?? ''))}`);
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-none"
-                  >
-                    {(item.strMealThumb || item.image) && (
-                      <img src={item.strMealThumb || item.image} alt={name} className="w-10 h-10 rounded-lg object-cover" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{name}</p>
-                      <p className="text-xs text-gray-400">{item.strCategory || item.category || 'Recipe'}</p>
-                    </div>
-                  </div>
+                    item={item}/>
                 );
               })}
             </div>

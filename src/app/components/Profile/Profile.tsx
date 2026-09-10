@@ -17,50 +17,28 @@ export default function ProfilePage() {
 
   // 1. جلب بيانات المستخدم الحالي
   useEffect(() => {
-    try {
-      const persistRoot = localStorage.getItem('persist:root');
-      if (persistRoot) {
-        const parsedRoot = JSON.parse(persistRoot);
-        if (parsedRoot.currentUser) {
-          const userObj = JSON.parse(parsedRoot.currentUser);
-          if (userObj) setUser(userObj);
-          return;
-        }
-      }
-      const storedUser = localStorage.getItem("currentUser");
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    fetch('/api/auth/me')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => data?.user && setUser(data.user))
+      .catch((error) => console.error(error));
   }, []);
 
   // 2. جلب الـ myRecipes من الـ localStorage
   useEffect(() => {
-    try {
-      if (!user.email) {
-        setMyRecipes([]);
-        return;
-      }
-
-      const storedMyRecipes = localStorage.getItem("myRecipes");
-      const allRecipes: recipe[] = JSON.parse(storedMyRecipes || "[]");
-      setMyRecipes(allRecipes.filter((storedRecipe) => storedRecipe.email === user.email));
-    } catch (e) {
-      console.error("Error loading myRecipes:", e);
-    }
+    if (!user.email) return setMyRecipes([]);
+    fetch('/api/recipes')
+      .then((response) => response.ok ? response.json() : { recipes: [] })
+      .then(({ recipes }: { recipes: recipe[] }) => setMyRecipes(recipes))
+      .catch((error) => console.error("Error loading recipes:", error));
   }, [user.email]);
 
-  const handleDeleteMyRecipe = (id: string) => {
-    const updatedRecipes = myRecipes.filter((recipe) => recipe.id !== id);
-    setMyRecipes(updatedRecipes);
-
-    const allRecipes: recipe[] = JSON.parse(localStorage.getItem("myRecipes") || "[]");
-    localStorage.setItem(
-      "myRecipes",
-      JSON.stringify(allRecipes.filter((recipe) => recipe.email !== user.email || recipe.id !== id)),
-    );
+  const handleDeleteMyRecipe = async (id: string) => {
+    const response = await fetch('/api/recipes', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (response.ok) setMyRecipes((recipes) => recipes.filter((recipe) => recipe.id !== id));
   };
 
   // 3. جلب الوصفات المحفوظة بناءً على إيميل اليوزر الحالي
@@ -70,8 +48,8 @@ export default function ProfilePage() {
     const fetchSavedMeals = async () => {
       setLoadingSaved(true);
       try {
-        const savedItemsKey = `saved_items_${user.email}`;
-        const storedIds: string[] = JSON.parse(localStorage.getItem(savedItemsKey) || '[]');
+        const savedResponse = await fetch('/api/saved');
+        const { mealIds: storedIds }: { mealIds: string[] } = await savedResponse.json();
 
         if (storedIds.length === 0) {
           setSavedRecipes([]);

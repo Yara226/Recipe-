@@ -2,16 +2,19 @@
 import Image from 'next/image';
 import {  FiClock, FiTrash2 } from 'react-icons/fi';
 import { recipe } from '@/utls/types/recipe';
+import Link from 'next/link';
 type MyRecipeProps = {
   recipes: recipe[];
   onDelete: (id: string) => void;
 };
 
 export default function MyRecipe({ recipes, onDelete }: MyRecipeProps) {
+
   return (
 <div>
     {
                   recipes.map((recipe) => (
+                   <Link key={recipe.id} href={`/added?id=${encodeURIComponent(recipe.id)}`} className="relative rounded-2xl overflow-hidden h-44 shadow-md group">
                     <div key={recipe.id} className="relative rounded-2xl overflow-hidden h-44 shadow-md group">
                       <Image 
                         src={recipe.image && recipe.image.startsWith('http') ? recipe.image : "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&h=400&fit=crop"} 
@@ -40,6 +43,7 @@ export default function MyRecipe({ recipes, onDelete }: MyRecipeProps) {
                         </div>
                       </div>
                     </div>
+                   </Link>
                   ))
 }
 </div>

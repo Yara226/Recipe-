@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FiClock, FiGlobe, FiBookmark } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 
 interface Recipe {
@@ -20,39 +21,21 @@ export default function CertainRecipes() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
-  // 1. جلب إيميل المستخدم الحالي من التخزين المحلي
+  // 1. جلب إيميل المستخدم الحالي من جلسة الخادم
   useEffect(() => {
-    try {
-      const persistRoot = localStorage.getItem('persist:root');
-      if (persistRoot) {
-        const parsedRoot = JSON.parse(persistRoot);
-        if (parsedRoot.currentUser) {
-          const userObj = JSON.parse(parsedRoot.currentUser);
-          if (userObj?.email) {
-            setUserEmail(userObj.email);
-          }
-        }
-      }
-      if (!userEmail) {
-        const directUser = localStorage.getItem('currentUser');
-        if (directUser) {
-          const userObj = JSON.parse(directUser);
-          if (userObj?.email) {
-            setUserEmail(userObj.email);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error reading user:', error);
-    }
-  }, [userEmail]);
+    fetch('/api/auth/me')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setUserEmail(data?.user?.email ?? null))
+      .catch((error) => console.error('Error reading user:', error));
+  }, []);
 
   // 2. تحميل الوصفات المحفوظة الخاصة بهذا المستخدم لتحديث حالة أزرار الحفظ
   useEffect(() => {
     if (!userEmail) return;
-    const savedItemsKey = `saved_items_${userEmail}`;
-    const stored: string[] = JSON.parse(localStorage.getItem(savedItemsKey) || '[]');
-    setSavedIds(stored);
+    fetch('/api/saved')
+      .then((response) => response.json())
+      .then(({ mealIds }: { mealIds: string[] }) => setSavedIds(mealIds))
+      .catch((error) => console.error('Error loading saved recipes:', error));
   }, [userEmail]);
 
   // 3. جلب وصفات مميزة من الـ API لعرضها في القسم
@@ -76,23 +59,26 @@ export default function CertainRecipes() {
   }, []);
 
   // 4. دالة تبديل حالة الحفظ (حفظ / إزالة)
-  const handleToggleSave = (idMeal: string) => {
+  const handleToggleSave = async (idMeal: string) => {
     if (!userEmail) {
-      alert('يرجى تسجيل الدخول أولاً لحفظ الوصفات');
+      toast.error('يرجى تسجيل الدخول أولاً لحفظ الوصفات');
       return;
     }
 
-    const savedItemsKey = `saved_items_${userEmail}`;
-    let updated: string[];
-    
-    if (savedIds.includes(idMeal)) {
-      updated = savedIds.filter((id) => id !== idMeal);
-    } else {
-      updated = [...savedIds, idMeal];
+    const isSaved = savedIds.includes(idMeal);
+    const response = await fetch('/api/saved', {
+      method: isSaved ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealId: idMeal }),
+    });
+
+    if (!response.ok) {
+      toast.error('تعذر تحديث الوصفة المحفوظة');
+      return;
     }
 
-    localStorage.setItem(savedItemsKey, JSON.stringify(updated));
-    setSavedIds(updated);
+    setSavedIds(isSaved ? savedIds.filter((id) => id !== idMeal) : [...savedIds, idMeal]);
+    toast.success(isSaved ? 'تمت إزالة الوصفة من المحفوظات' : 'تم حفظ الوصفة بنجاح');
   };
 
   if (loading) {
