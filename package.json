@@ -34,5 +34,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true
   }
 }
