@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
-import { FaFacebookF } from 'react-icons/fa';
 import { useForm, SubmitHandler } from "react-hook-form";
 import type{Inputsin} from '../../../utls/types/sign'
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,8 +36,15 @@ export default function SignIn() {
             router.replace("/home");
         };
 
-        const handleSocialLogin = (provider: 'google' | 'facebook') => {
-            window.location.assign(`/api/auth/${provider}`);
+        const handleSocialLogin = (provider: 'google') => {
+            try{
+                window.location.assign(`/api/auth/${provider}`);
+            }
+          catch (error) {
+            console.error("Social login failed:", error);
+            toast.error("فشل تسجيل الدخول عبر وسائل التواصل الاجتماعي");
+          }
+
         };
     return (
         <div 
