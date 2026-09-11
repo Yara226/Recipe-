@@ -106,9 +106,7 @@ export default function SignIn() {
                     <button type="button" onClick={() => handleSocialLogin('google')} aria-label="Continue with Google" className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
                         <FcGoogle className="text-2xl" />
                     </button>
-                    <button type="button" onClick={() => handleSocialLogin('facebook')} aria-label="Continue with Facebook" className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
-                        <FaFacebookF className="text-2xl text-blue-500" />
-                    </button>
+                    
                 </div>
 
                 {/* زر الانتقال لصفحة الـ Sign Up لو مفيش حساب */}
