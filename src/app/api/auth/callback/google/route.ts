@@ -35,6 +35,7 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
+        console.error('Google Token Exchange Failed:', tokenData);
       return NextResponse.redirect(new URL('/login?error=token_error', getAppUrl()));
     }
 
