@@ -8,6 +8,8 @@ import type{Inputsin} from '../../../utls/types/sign'
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signinSchema } from "../../../validations/validate";
 import toast from "react-hot-toast";
+import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 export default function SignIn() {
     const router = useRouter();
 
@@ -19,7 +21,16 @@ export default function SignIn() {
     } = useForm<Inputsin>({
       resolver: zodResolver(signinSchema),
     });
-
+const searchParams = useSearchParams();
+useEffect(() => {
+    const error = searchParams.get('error');
+    try{
+         toast.error(error || "حدث خطأ أثناء تسجيل الدخول");
+    }
+    catch (error) {
+        console.error("Error displaying toast:", error);
+    }
+},[searchParams]);
         const onSubmit: SubmitHandler<Inputsin> = async (data) => {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
