@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createOAuthState, getAppUrl, getOAuthConfig } from '@/lib/oauth';
+import { createOAuthState, getOAuthConfig } from '@/lib/oauth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const requestUrl = new URL(request.url);
+    const baseUrl = requestUrl.origin;
+
     const { clientId } = getOAuthConfig('google');
     const state = createOAuthState();
-    const callbackUrl = `${getAppUrl()}/api/auth/callback/google`;
+    const callbackUrl = `${baseUrl}/api/auth/callback/google`;
     const authorizationUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
 
     authorizationUrl.searchParams.set('client_id', clientId);
@@ -15,10 +18,8 @@ export async function GET() {
     authorizationUrl.searchParams.set('state', state);
     authorizationUrl.searchParams.set('access_type', 'online');
 
-    // إنشاء التوجيه لصفحة Google
     const response = NextResponse.redirect(authorizationUrl);
 
-    // تعيين الكوكيز مباشرة على كائن الاستجابة لتثبيتها بنجاح
     response.cookies.set('google_oauth_state', state, {
       httpOnly: true,
       sameSite: 'lax',
@@ -29,6 +30,7 @@ export async function GET() {
 
     return response;
   } catch {
-    return NextResponse.redirect(new URL('/login?error=google_config', getAppUrl()));
+    const baseUrl = new URL(request.url).origin;
+    return NextResponse.redirect(new URL('/login?error=google_config', baseUrl));
   }
 }
