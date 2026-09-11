@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { db } from './db';
+import { db, dbReady } from './db';
 
 export type OAuthProvider = 'google' | 'facebook';
 
@@ -26,17 +26,22 @@ export function createOAuthState() {
 }
 
 export async function findOrCreateOAuthUser(firstName: string, email: string) {
+  await dbReady;
   const normalizedEmail = email.trim().toLowerCase();
-  const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail) as
+  const existingUser = (await db.execute({
+    sql: 'SELECT id FROM users WHERE email = ?',
+    args: [normalizedEmail],
+  })).rows[0] as unknown as
     | { id: number }
     | undefined;
 
   if (existingUser) return existingUser.id;
 
   const passwordHash = await bcrypt.hash(randomUUID(), 12);
-  const result = db.prepare(
-    'INSERT INTO users (first_name, email, password_hash) VALUES (?, ?, ?)',
-  ).run(firstName.trim() || 'User', normalizedEmail, passwordHash);
+  const result = await db.execute({
+    sql: 'INSERT INTO users (first_name, email, password_hash) VALUES (?, ?, ?)',
+    args: [firstName.trim() || 'User', normalizedEmail, passwordHash],
+  });
 
   return Number(result.lastInsertRowid);
 }

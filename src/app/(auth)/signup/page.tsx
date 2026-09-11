@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
-import { FaFacebookF } from 'react-icons/fa';
 import { useForm, SubmitHandler } from "react-hook-form"
 import type {Inputsup} from '../../../utls/types/sign'
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,7 +38,7 @@ const {
         router.replace('/login');
     };
 
-    const handleSocialLogin = (provider: 'google' | 'facebook') => {
+    const handleSocialLogin = (provider: 'google' ) => {
         window.location.assign(`/api/auth/${provider}`);
     };
     return (
@@ -131,9 +130,7 @@ const {
                     <button type="button" onClick={() => handleSocialLogin('google')} aria-label="Continue with Google" className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
                         <FcGoogle className="text-2xl" />
                     </button>
-                    <button type="button" onClick={() => handleSocialLogin('facebook')} aria-label="Continue with Facebook" className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl border border-white/10 transition flex items-center justify-center w-16">
-                        <FaFacebookF className="text-2xl text-blue-500" />
-                    </button>
+                    
                 </div>
 
                 {/* زر الانتقال لصفحة الـ Sign In لو عنده حساب */}

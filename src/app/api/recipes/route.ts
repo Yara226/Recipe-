@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { db, dbReady } from '@/lib/db';
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rows = db.prepare(`
-    SELECT id, name, image, time, ingredients, steps
-    FROM recipes WHERE user_id = ? ORDER BY created_at DESC
-  `).all(user.id) as Array<{
+  await dbReady;
+  const result = await db.execute({
+    sql: `
+      SELECT id, name, image, time, ingredients, steps
+      FROM recipes WHERE user_id = ? ORDER BY created_at DESC
+    `,
+    args: [user.id],
+  });
+  const rows = result.rows as unknown as Array<{
     id: string;
     name: string;
     image: string;
@@ -42,10 +47,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid recipe data' }, { status: 400 });
   }
 
-  db.prepare(`
-    INSERT INTO recipes (id, user_id, name, image, time, ingredients, steps)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, user.id, name, image, time, JSON.stringify(ingredients), JSON.stringify(steps));
+  await dbReady;
+  await db.execute({
+    sql: `
+      INSERT INTO recipes (id, user_id, name, image, time, ingredients, steps)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+    args: [id, user.id, name, image, time, JSON.stringify(ingredients), JSON.stringify(steps)],
+  });
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
@@ -55,6 +64,10 @@ export async function DELETE(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await request.json();
-  db.prepare('DELETE FROM recipes WHERE id = ? AND user_id = ?').run(String(id), user.id);
+  await dbReady;
+  await db.execute({
+    sql: 'DELETE FROM recipes WHERE id = ? AND user_id = ?',
+    args: [String(id), user.id],
+  });
   return NextResponse.json({ ok: true });
 }
