@@ -121,7 +121,7 @@ const {
                 {/* فاصل (Or Sign in With) */}
                 <div className="flex items-center my-6">
                     <div className="flex-grow border-t border-gray-600"></div>
-                    <span className="px-3 text-gray-400 text-xs">Or Sign in With</span>
+                    <span className="px-3 text-gray-400 text-xs">Or Sign Up With</span>
                     <div className="flex-grow border-t border-gray-600"></div>
                 </div>
 
