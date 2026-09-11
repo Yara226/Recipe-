@@ -13,7 +13,6 @@ export const db = createClient({
 });
 
 async function initDb() {
-  await db.execute('PRAGMA busy_timeout = 5000');
   await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
