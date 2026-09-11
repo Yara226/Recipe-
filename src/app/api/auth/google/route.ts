@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createOAuthState, getAppUrl, getOAuthConfig } from '@/lib/oauth';
 
 export async function GET() {
@@ -16,7 +15,11 @@ export async function GET() {
     authorizationUrl.searchParams.set('state', state);
     authorizationUrl.searchParams.set('access_type', 'online');
 
-    (await cookies()).set('google_oauth_state', state, {
+    // إنشاء التوجيه لصفحة Google
+    const response = NextResponse.redirect(authorizationUrl);
+
+    // تعيين الكوكيز مباشرة على كائن الاستجابة لتثبيتها بنجاح
+    response.cookies.set('google_oauth_state', state, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
@@ -24,7 +27,7 @@ export async function GET() {
       maxAge: 600,
     });
 
-    return NextResponse.redirect(authorizationUrl);
+    return response;
   } catch {
     return NextResponse.redirect(new URL('/login?error=google_config', getAppUrl()));
   }

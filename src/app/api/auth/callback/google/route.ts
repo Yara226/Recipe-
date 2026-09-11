@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const savedState = cookieStore.get('google_oauth_state')?.value;
 
-  // 1. التحقق من صحة الـ State لحماية الموقع
+  // التحقق من وجود الـ State والمطابقة
   if (!code || !state || !savedState || state !== savedState) {
     return NextResponse.redirect(new URL('/login?error=invalid_state', getAppUrl()));
   }
@@ -20,7 +20,6 @@ export async function GET(request: Request) {
     const { clientId, clientSecret } = getOAuthConfig('google');
     const redirectUri = `${getAppUrl()}/api/auth/callback/google`;
 
-    // 2. تبديل الـ Code بـ Access Token من Google
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -39,7 +38,6 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=token_error', getAppUrl()));
     }
 
-    // 3. جلب بيانات المستخدم من Google
     const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
@@ -50,16 +48,13 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=no_email', getAppUrl()));
     }
 
-    // 4. إنشاء أو إيجاد المستخدم في Turso Database
     const userId = await findOrCreateOAuthUser(
       googleUser.name || googleUser.given_name || 'User',
       googleUser.email
     );
 
-    // 5. إنشاء الجلسة وتخزين الـ Cookie
     await createSession(userId);
 
-    // 6. التوجيه بنجاح إلى الصفحة الرئيسية
     const response = NextResponse.redirect(new URL('/', getAppUrl()));
     response.cookies.delete('google_oauth_state');
     return response;
