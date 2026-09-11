@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAppUrl, getOAuthConfig, findOrCreateOAuthUser } from '@/lib/oauth';
-import { createSession } from '@/lib/auth';
+import { createSession, sessionCookie } from '@/lib/auth';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,7 +11,6 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const savedState = cookieStore.get('google_oauth_state')?.value;
 
-  // التحقق من وجود الـ State والمطابقة
   if (!code || !state || !savedState || state !== savedState) {
     return NextResponse.redirect(new URL('/login?error=invalid_state', getAppUrl()));
   }
@@ -35,7 +34,6 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-        console.error('Google Token Exchange Failed:', tokenData);
       return NextResponse.redirect(new URL('/login?error=token_error', getAppUrl()));
     }
 
@@ -54,10 +52,24 @@ export async function GET(request: Request) {
       googleUser.email
     );
 
-    await createSession(userId);
+    // 1. إنشاء الجلسة في الداتابيز واستخراج التوكين
+    const { token, expiresAt } = await createSession(userId);
 
+    // 2. إنشاء الاستجابة للتوجيه للصفحة الرئيسية
     const response = NextResponse.redirect(new URL('/', getAppUrl()));
+
+    // 3. تثبيت كوكيز الجلسة صراحة على كائن الاستجابة
+    response.cookies.set(sessionCookie, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      expires: new Date(expiresAt),
+    });
+
+    // 4. مسح state الكوكيز
     response.cookies.delete('google_oauth_state');
+
     return response;
   } catch (error) {
     console.error('OAuth Callback Error:', error);

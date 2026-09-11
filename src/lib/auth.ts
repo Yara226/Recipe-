@@ -8,8 +8,8 @@ export type SessionUser = {
   email: string;
 };
 
-const sessionCookie = 'recipe_session';
-const sessionDuration = 1000 * 60 * 60 * 24 * 30;
+export const sessionCookie = 'recipe_session';
+export const sessionDuration = 1000 * 60 * 60 * 24 * 30;
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
   await dbReady;
@@ -38,13 +38,17 @@ export async function createSession(userId: number) {
     sql: 'INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)',
     args: [token, userId, expiresAt],
   });
-  (await cookies()).set(sessionCookie, token, {
+
+  const cookieStore = await cookies();
+  cookieStore.set(sessionCookie, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     expires: new Date(expiresAt),
   });
+
+  return { token, expiresAt };
 }
 
 export async function destroySession() {
