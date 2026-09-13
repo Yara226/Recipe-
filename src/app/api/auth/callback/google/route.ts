@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getOAuthConfig, findOrCreateOAuthUser } from '@/lib/oauth';
-import { createSession, sessionCookie } from '@/lib/auth';
+import { createSession, sessionCookie, sessionDuration } from '@/lib/auth';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -55,14 +55,11 @@ export async function GET(request: Request) {
       googleUser.email
     );
 
-    // 1. إنشاء الجلسة في قاعدة البيانات والحصول على الـ token والـ expiresAt
+    // 1. إنشاء الجلسة في قاعدة البيانات
     const { token, expiresAt } = await createSession(userId);
 
-    // 2. إنشاء كائن الاستجابة للتوجيه
-    const response = NextResponse.redirect(new URL('/', baseUrl));
-
-    // 3. تثبيت الكوكيز صراحة على الـ NextResponse لمنع مسحه من المتصفح
-    response.cookies.set(sessionCookie, token, {
+    // 2. تعيين الكوكيز مباشرة في الـ CookieStore
+    cookieStore.set(sessionCookie, token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
@@ -70,8 +67,20 @@ export async function GET(request: Request) {
       expires: new Date(expiresAt),
     });
 
-    // 4. حذف كوكيز التحقق الخاصة بـ Google
-    response.cookies.delete('google_oauth_state');
+    // 3. حذف كوكيز الـ state القديمة
+    cookieStore.delete('google_oauth_state');
+
+    // 4. إنشاء التوجيه بعد تثبيت الكوكيز
+    const response = NextResponse.redirect(new URL('/', baseUrl));
+
+    // 5. تأكيد تعيين الكوكيز على كائن الاستجابة أيضاً لضمان قبولها في Vercel
+    response.cookies.set(sessionCookie, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      expires: new Date(expiresAt),
+    });
 
     return response;
   } catch (error) {
