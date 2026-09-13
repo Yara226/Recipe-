@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     cookieStore.delete('google_oauth_state');
 
     // 4. إنشاء التوجيه بعد تثبيت الكوكيز
-    const response = NextResponse.redirect(new URL('/', baseUrl));
+    const response = NextResponse.redirect(new URL('/home', baseUrl));
 
     // 5. تأكيد تعيين الكوكيز على كائن الاستجابة أيضاً لضمان قبولها في Vercel
     response.cookies.set(sessionCookie, token, {
