@@ -5,7 +5,7 @@ import { createSession, sessionCookie } from '@/lib/auth';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const baseUrl = requestUrl.origin; // يضمن استخدام نفس الدومين المطلوب تماماً
+  const baseUrl = requestUrl.origin;
 
   const code = requestUrl.searchParams.get('code');
   const state = requestUrl.searchParams.get('state');
@@ -55,13 +55,13 @@ export async function GET(request: Request) {
       googleUser.email
     );
 
-    // 1. إنشاء الجلسة في الداتابيز
+    // 1. إنشاء الجلسة في قاعدة البيانات والحصول على الـ token والـ expiresAt
     const { token, expiresAt } = await createSession(userId);
 
-    // 2. إنشاء التوجيه باستخدام نفس الـ Origin لتفادي مسح الكوكيز
+    // 2. إنشاء كائن الاستجابة للتوجيه
     const response = NextResponse.redirect(new URL('/', baseUrl));
 
-    // 3. ربط الكوكيز بالاستجابة
+    // 3. تثبيت الكوكيز صراحة على الـ NextResponse لمنع مسحه من المتصفح
     response.cookies.set(sessionCookie, token, {
       httpOnly: true,
       sameSite: 'lax',
@@ -70,6 +70,7 @@ export async function GET(request: Request) {
       expires: new Date(expiresAt),
     });
 
+    // 4. حذف كوكيز التحقق الخاصة بـ Google
     response.cookies.delete('google_oauth_state');
 
     return response;
