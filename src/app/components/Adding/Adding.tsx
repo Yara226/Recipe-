@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+
 export default function NewRecipePage() {
   const router = useRouter();
     const [ingredients, setIngredients] = useState([""]);
@@ -26,7 +27,7 @@ const addStepField = () => {
      
     });
  const onSubmit: SubmitHandler<recipe> = async (data) => {
-   const newRecipe = {
+   const newRecipe =  {
   id: data.name + data.time,
   name: data.name,
   image: data.image,

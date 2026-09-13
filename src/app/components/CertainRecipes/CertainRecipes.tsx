@@ -1,22 +1,14 @@
 'use client';
 import  { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { FiClock, FiGlobe, FiBookmark } from 'react-icons/fi';
+import {  FiGlobe, FiBookmark } from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-
-
-interface Recipe {
-  idMeal: string;
-  strMeal: string;
-  strMealThumb: string;
-  strArea?: string;
-}
+import type { Meal } from '@/utls/types/meal';
 
 export default function CertainRecipes() {
     const navigate=useRouter()
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<string[]>([]);

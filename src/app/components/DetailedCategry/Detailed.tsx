@@ -1,15 +1,8 @@
-import React from 'react';
 import { useRouter } from 'next/navigation';
-interface RecipeCardProps {
-  item: {
-    strMeal: string;
-    strMealThumb: string;
-    idMeal: number;
-    strCountry?: string; // خليناها اختياري عشان لو مش دايماً راجعة من الـ API
-  };
-}
+import type { RecipeCard } from '@/utls/types/recipeCard';
 
-export default function RecipeCard({ item }: RecipeCardProps) {
+export default function RecipeCard({ item }:RecipeCard) {
+  console.log("item",item)
     const navigate=useRouter()
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
